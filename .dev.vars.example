@@ -1,0 +1,32 @@
+# Maildock local development variables
+# Copy this file to .dev.vars and fill in the values.
+# These are only used for local development (npm run dev).
+# In production, secrets are set via the Cloudflare Workers dashboard or wrangler secret put.
+
+# A 32+ character random string used to encrypt credentials at rest.
+# Generate one with: openssl rand -hex 32
+ENCRYPTION_KEY=
+
+# Cloudflare API token with the required permissions (see CLOUDFLARE_PERMISSIONS.md).
+# For local dev, you can use a real token or point to the mock server below.
+CF_API_TOKEN=
+
+# Override the Cloudflare API base URL — used only during local dev to point at the mock server.
+# Remove this line in production or leave it empty.
+# CF_API_BASE=http://127.0.0.1:8790/cf
+
+# Override Resend API base URL — used only during local dev to point at the mock server.
+# Remove this line in production or leave it empty.
+# RESEND_API_BASE=http://127.0.0.1:8790/resend
+
+# Override Brevo API base URL — used only during local dev to point at the mock server.
+# Remove this line in production or leave it empty.
+# BREVO_API_BASE=http://127.0.0.1:8790/brevo
+
+# Override Mailjet API base URL — used only during local dev to point at the mock server.
+# Remove this line in production or leave it empty.
+# MAILJET_API_BASE=http://127.0.0.1:8790/mailjet
+
+# The name of your Cloudflare Worker (must match the "name" in wrangler.jsonc).
+WORKER_NAME=maildock
+

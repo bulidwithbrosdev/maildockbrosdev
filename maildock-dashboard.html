@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Maildock — Management Dashboard</title>
+<style>
+  :root {
+    --bg:        #0f0d0d;
+    --surface:   #1a1615;
+    --surface2:  #231e1e;
+    --border:    #2e2727;
+    --border2:   #3d3535;
+    --red:       #FC0004;
+    --red-hover: #d90003;
+    --orange:    #ff6b35;
+    --text:      #f0eaea;
+    --muted:     #9e8e8e;
+    --muted2:    #6b5a5a;
+    --success:   #22c55e;
+    --warn:      #f59e0b;
+    --error:     #ef4444;
+    --info:      #3b82f6;
+    --radius:    12px;
+    --radius-sm: 8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Layout ── */
+  .shell { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 220px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  }
+  .main { flex: 1; padding: 32px 36px; max-width: 920px; }
+
+  /* ── Sidebar ── */
+  .sidebar-logo {
+    display: flex; align-items: center; gap: 10px;
+    padding: 20px 18px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo svg { width: 30px; height: 30px; flex-shrink: 0; }
+  .sidebar-logo-text { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+  .sidebar-logo-sub { font-size: 10px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
+  .sidebar-nav { padding: 10px 10px; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border-radius: var(--radius-sm);
+    color: var(--muted); text-decoration: none; font-size: 13px;
+    cursor: pointer; transition: all .15s;
+    border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(252,0,4,.12); color: var(--red); }
+  .nav-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .nav-section { font-size: 10px; color: var(--muted2); text-transform: uppercase; letter-spacing: .7px; padding: 12px 10px 4px; }
+  .sidebar-footer { padding: 14px 18px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted2); }
+
+  /* ── Page header ── */
+  .page-header { margin-bottom: 28px; }
+  .page-header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .page-header p { color: var(--muted); font-size: 13px; }
+
+  /* ── Cards ── */
+  .section { margin-bottom: 28px; }
+  .section-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .7px;
+    margin-bottom: 12px;
+  }
+  .section-title svg { width: 13px; height: 13px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .card-header {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-header-left { flex: 1; }
+  .card-title { font-size: 15px; font-weight: 600; margin-bottom: 2px; display: flex; align-items: center; gap: 8px; }
+  .card-title svg { width: 16px; height: 16px; color: var(--red); }
+  .card-desc { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .card-body { padding: 18px 20px; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 16px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 600; border: none; cursor: pointer;
+    transition: all .15s; text-decoration: none; white-space: nowrap;
+  }
+  .btn svg { width: 14px; height: 14px; }
+  .btn-primary { background: var(--red); color: #fff; }
+  .btn-primary:hover { background: var(--red-hover); }
+  .btn-gradient { background: linear-gradient(135deg, var(--red), var(--orange)); color: #fff; }
+  .btn-gradient:hover { opacity: .9; }
+  .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
+  .btn-ghost:hover { background: var(--border); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-icon { padding: 6px; border-radius: 6px; }
+
+  /* ── Command block ── */
+  .cmd-block {
+    background: #0a0808; border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); padding: 12px 14px;
+    display: flex; align-items: center; gap: 10px; margin-top: 10px;
+  }
+  .cmd-text { flex: 1; font-family: 'Courier New', Courier, monospace; font-size: 12.5px; color: #a3e635; word-break: break-all; }
+  .copy-btn {
+    flex-shrink: 0; background: var(--surface2); border: 1px solid var(--border2);
+    color: var(--muted); border-radius: 6px; padding: 5px 9px;
+    font-size: 11px; cursor: pointer; transition: all .15s;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .copy-btn:hover { background: var(--border); color: var(--text); }
+  .copy-btn svg { width: 11px; height: 11px; }
+
+  /* ── Checklist ── */
+  .checklist { display: flex; flex-direction: column; gap: 8px; }
+  .check-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 10px 12px;
+  }
+  .check-icon { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+  .check-icon.required { background: rgba(252,0,4,.15); color: var(--red); }
+  .check-icon.optional { background: rgba(59,130,246,.15); color: var(--info); }
+  .check-icon svg { width: 10px; height: 10px; }
+  .check-label { font-size: 13px; font-weight: 500; }
+  .check-why { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .check-badge {
+    margin-left: auto; flex-shrink: 0;
+    font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 600;
+  }
+  .badge-required { background: rgba(252,0,4,.15); color: var(--red); }
+  .badge-optional { background: rgba(59,130,246,.15); color: var(--info); }
+
+  /* ── Form ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .form-hint { font-size: 11px; color: var(--muted2); margin-top: 2px; }
+  input[type=text], input[type=password], select {
+    background: var(--surface2); border: 1px solid var(--border2);
+    color: var(--text); border-radius: var(--radius-sm);
+    padding: 8px 11px; font-size: 13px; width: 100%;
+    outline: none; transition: border-color .15s;
+    font-family: inherit;
+  }
+  input[type=text]:focus, input[type=password]:focus, select:focus { border-color: var(--red); }
+  input[type=text]::placeholder, input[type=password]::placeholder { color: var(--muted2); }
+  select option { background: var(--surface2); }
+
+  /* ── Collapsible ── */
+  .collapsible { margin-top: 12px; }
+  .collapsible-trigger {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--muted); cursor: pointer;
+    background: none; border: none; padding: 0;
+  }
+  .collapsible-trigger:hover { color: var(--text); }
+  .collapsible-trigger svg { width: 12px; height: 12px; transition: transform .2s; }
+  .collapsible-trigger.open svg { transform: rotate(90deg); }
+  .collapsible-body {
+    margin-top: 10px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 14px;
+    font-size: 12px; color: var(--muted); line-height: 1.6;
+    display: none;
+  }
+  .collapsible-body.open { display: block; }
+  .collapsible-body ol { padding-left: 16px; }
+  .collapsible-body li { margin-bottom: 4px; }
+  .collapsible-body code { background: rgba(255,255,255,.07); padding: 1px 5px; border-radius: 4px; font-size: 11px; color: #a3e635; }
+
+  /* ── Status pills ── */
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+  }
+  .pill-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .pill.ok { background: rgba(34,197,94,.12); color: var(--success); }
+  .pill.ok .pill-dot { background: var(--success); }
+  .pill.warn { background: rgba(245,158,11,.12); color: var(--warn); }
+  .pill.warn .pill-dot { background: var(--warn); }
+  .pill.err { background: rgba(239,68,68,.12); color: var(--error); }
+  .pill.err .pill-dot { background: var(--error); }
+
+  /* ── Info box ── */
+  .info-box {
+    background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.2);
+    border-radius: var(--radius-sm); padding: 10px 13px;
+    font-size: 12px; color: #93c5fd; line-height: 1.5; margin-top: 10px;
+  }
+  .warn-box {
+    background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.2);
+    border-radius: var(--radius-sm); padding: 10px 13px;
+    font-size: 12px; color: #fcd34d; line-height: 1.5; margin-top: 10px;
+  }
+
+  /* ── Link list ── */
+  .link-list { display: flex; flex-direction: column; gap: 8px; }
+  .link-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 10px 12px;
+  }
+  .link-row svg { width: 15px; height: 15px; color: var(--red); flex-shrink: 0; }
+  .link-row a { color: var(--text); text-decoration: none; font-size: 13px; font-weight: 500; }
+  .link-row a:hover { color: var(--red); }
+  .link-row span { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); padding: 10px 16px;
+    font-size: 13px; font-weight: 500; color: var(--success);
+    display: flex; align-items: center; gap: 8px;
+    transform: translateY(80px); opacity: 0; transition: all .25s;
+    pointer-events: none;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast svg { width: 14px; height: 14px; }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 2px; padding: 4px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 16px; width: fit-content; }
+  .tab {
+    padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
+    cursor: pointer; border: none; background: none; color: var(--muted); transition: all .15s;
+  }
+  .tab.active { background: var(--surface); color: var(--text); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Responsive ── */
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .main { padding: 20px 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── Page sections (hidden by default) ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Progress steps ── */
+  .steps { display: flex; flex-direction: column; gap: 0; }
+  .step {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: var(--muted); flex-shrink: 0;
+  }
+  .step-num.done { background: var(--red); border-color: var(--red); color: #fff; }
+  .step-content { flex: 1; }
+  .step-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .step-desc { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="48" height="48" rx="12" fill="#FC0004"/>
+        <path d="M8 16C8 14.3431 9.34315 13 11 13H37C38.6569 13 40 14.3431 40 16V32C40 33.6569 38.6569 35 37 35H11C9.34315 35 8 33.6569 8 32V16Z" fill="#FF4044"/>
+        <path d="M8 17L24 27L40 17" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M8 17L24 27L40 17V32C40 33.6569 38.6569 35 37 35H11C9.34315 35 8 33.6569 8 32V17Z" fill="#FC0004"/>
+        <path d="M8 17L24 27L40 17" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="sidebar-logo-text">Maildock</div>
+        <div class="sidebar-logo-sub">Management</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Setup</div>
+      <button class="nav-item active" onclick="showPage('deploy')">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L14 5V11L8 15L2 11V5L8 1Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1V15M2 5L14 11M14 5L2 11" stroke="currentColor" stroke-width="1" opacity=".4"/></svg>
+        Deploy
+      </button>
+      <button class="nav-item" onclick="showPage('config')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 2v1.5M8 12.5V14M2 8h1.5M12.5 8H14M3.5 3.5l1.1 1.1M11.4 11.4l1.1 1.1M3.5 12.5l1.1-1.1M11.4 4.6l1.1-1.1" stroke-linecap="round"/></svg>
+        Configuration
+      </button>
+      <button class="nav-item" onclick="showPage('permissions')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="8" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2" stroke-linecap="round"/></svg>
+        Permissions
+      </button>
+      <div class="nav-section">Development</div>
+      <button class="nav-item" onclick="showPage('build')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h7M2 8h4M2 12h3" stroke-linecap="round"/><path d="M10 6l4 2-4 2V6z" fill="currentColor" stroke="none"/></svg>
+        Build & Dev
+      </button>
+      <button class="nav-item" onclick="showPage('database')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="8" cy="4" rx="5" ry="2"/><path d="M3 4v3c0 1.1 2.24 2 5 2s5-.9 5-2V4"/><path d="M3 7v3c0 1.1 2.24 2 5 2s5-.9 5-2V7" stroke-linecap="round"/></svg>
+        Database
+      </button>
+      <div class="nav-section">Resources</div>
+      <button class="nav-item" onclick="showPage('links')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.5 9.5a3.5 3.5 0 004.95 0l1.5-1.5a3.5 3.5 0 00-4.95-4.95l-.85.85" stroke-linecap="round"/><path d="M9.5 6.5a3.5 3.5 0 00-4.95 0L3 8a3.5 3.5 0 004.95 4.95l.85-.85" stroke-linecap="round"/></svg>
+        Links & Docs
+      </button>
+    </nav>
+    <div class="sidebar-footer">v1.0 · Cloudflare Workers</div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="main">
+
+    <!-- ═══ DEPLOY PAGE ═══ -->
+    <div class="page active" id="page-deploy">
+      <div class="page-header">
+        <h1>🚀 Deploy Maildock</h1>
+        <p>Build and deploy to Cloudflare Workers in one command.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-title">
+          <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.5 1L12 4.5V9.5L6.5 12L1 9.5V4.5L6.5 1Z"/></svg>
+          Pre-flight Checklist
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="checklist">
+              <div class="check-item">
+                <div class="check-icon required">
+                  <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5h6M5 2v6" stroke-linecap="round"/></svg>
+                </div>
+                <div>
+                  <div class="check-label">Node.js ≥ 22 installed</div>
+                  <div class="check-why">Run <code>node --version</code> in terminal</div>
+                </div>
+              </div>
+              <div class="check-item">
+                <div class="check-icon required">
+                  <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5h6M5 2v6" stroke-linecap="round"/></svg>
+                </div>
+                <div>
+                  <div class="check-label">Wrangler authenticated</div>
+                  <div class="check-why">Run <code>npx wrangler whoami</code> — must show your Cloudflare account</div>
+                </div>
+              </div>
+              <div class="check-item">
+                <div class="check-icon required">
+                  <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5h6M5 2v6" stroke-linecap="round"/></svg>
+                </div>
+                <div>
+                  <div class="check-label">Dependencies installed</div>
+                  <div class="check-why">Run <code>npm install</code> inside the project root</div>
+                </div>
+              </div>
+              <div class="check-item">
+                <div class="check-icon optional">
+                  <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5h6M5 2v6" stroke-linecap="round"/></svg>
+                </div>
+                <div>
+                  <div class="check-label">D1 database migrated (first deploy)</div>
+                  <div class="check-why">The Worker auto-applies migrations on startup — no manual step needed</div>
+                </div>
+                <span class="check-badge badge-optional">Auto</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">
+          <svg viewBox="0 0 13 13" fill="currentColor"><circle cx="6.5" cy="6.5" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 6.5l1.5 1.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          Deploy Commands
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2L14 6V14H2V6L8 2Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Full Deploy (Build + Deploy)
+              </div>
+              <div class="card-desc">Builds both the Worker and the web app, then deploys to Cloudflare. Use this for production releases.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="cmd-block">
+              <span class="cmd-text">cd d:\Maildock\Maildock &amp;&amp; npm run deploy</span>
+              <button class="copy-btn" onclick="copyCmd('cd d:\\Maildock\\Maildock &amp;&amp; npm run deploy', this)">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Copy
+              </button>
+            </div>
+            <div class="collapsible">
+              <button class="collapsible-trigger" onclick="toggleCollapsible(this)">
+                <svg viewBox="0 0 12 12" fill="currentColor"><path d="M4.5 3L7.5 6L4.5 9" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                What does this do?
+              </button>
+              <div class="collapsible-body">
+                <ol>
+                  <li>Runs <code>vite build</code> → compiles TypeScript, bundles React into <code>dist/client/</code> and the Cloudflare Worker into <code>dist/maildock/</code>.</li>
+                  <li>Runs <code>npx wrangler deploy</code> → uploads the Worker script and assets to Cloudflare's edge network.</li>
+                  <li>Wrangler auto-creates the D1 database if it doesn't exist on your account.</li>
+                  <li>The Worker applies its own SQL migrations on the first request.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8l5 5L14 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Login to Wrangler (run once)
+              </div>
+              <div class="card-desc">Authenticates Wrangler with your Cloudflare account via browser OAuth. Only needed once per machine.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="cmd-block">
+              <span class="cmd-text">npx wrangler login</span>
+              <button class="copy-btn" onclick="copyCmd('npx wrangler login', this)">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Copy
+              </button>
+            </div>
+            <div class="cmd-block">
+              <span class="cmd-text">npx wrangler whoami</span>
+              <button class="copy-btn" onclick="copyCmd('npx wrangler whoami', this)">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Deploy Workflow</div>
+        <div class="card">
+          <div class="card-body">
+            <div class="steps">
+              <div class="step"><div class="step-num done">1</div><div class="step-content"><div class="step-title">Clone / open the repo</div><div class="step-desc">Ensure you are inside <code>d:\Maildock\Maildock</code></div></div></div>
+              <div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-title">Run <code>npm install</code></div><div class="step-desc">Install all Node.js dependencies</div></div></div>
+              <div class="step"><div class="step-num">3</div><div class="step-content"><div class="step-title">Run <code>npx wrangler login</code></div><div class="step-desc">Authenticate with Cloudflare — once per machine</div></div></div>
+              <div class="step"><div class="step-num">4</div><div class="step-content"><div class="step-title">Run <code>npm run deploy</code></div><div class="step-desc">Builds and deploys the Worker. Wrangler creates D1 automatically.</div></div></div>
+              <div class="step"><div class="step-num">5</div><div class="step-content"><div class="step-title">Open the Worker URL and complete Setup</div><div class="step-desc">First visit shows the Setup wizard: paste your Cloudflare API token, create the admin account.</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ CONFIG PAGE ═══ -->
+    <div class="page" id="page-config">
+      <div class="page-header">
+        <h1>⚙️ Configuration</h1>
+        <p>Environment variables for local development (<code>.dev.vars</code>) and production secrets.</p>
+      </div>
+
+      <div class="warn-box">
+        ⚠️ <strong>Never commit real credentials.</strong> The <code>.dev.vars</code> file is listed in <code>.gitignore</code>. Production secrets are set in the Cloudflare Workers dashboard or via <code>wrangler secret put</code> — never in source code.
+      </div>
+
+      <div class="section" style="margin-top:20px">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">Local Dev Variables (<code>.dev.vars</code>)</div>
+              <div class="card-desc">These values are used by <code>npm run dev</code>. Copy from <code>.dev.vars.example</code> in the project root and fill in your values.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>ENCRYPTION_KEY</label>
+                <input type="password" id="cfg-enc" placeholder="32+ char random hex string" />
+                <div class="form-hint">Generate: <code>openssl rand -hex 32</code> or any 32+ char random string</div>
+              </div>
+              <div class="form-group">
+                <label>CF_API_TOKEN</label>
+                <input type="password" id="cfg-token" placeholder="Your Cloudflare API token" />
+                <div class="form-hint">See Permissions tab for required scopes</div>
+              </div>
+              <div class="form-group">
+                <label>WORKER_NAME</label>
+                <input type="text" id="cfg-worker" placeholder="maildock" value="maildock" />
+                <div class="form-hint">Must match the <code>name</code> in <code>wrangler.jsonc</code></div>
+              </div>
+              <div class="form-group">
+                <label>CF_API_BASE (dev mock only)</label>
+                <input type="text" id="cfg-cf-base" placeholder="http://127.0.0.1:8790/cf" />
+                <div class="form-hint">Leave empty for production. Points dev server at mock APIs.</div>
+              </div>
+            </div>
+            <div style="margin-top:16px">
+              <button class="btn btn-gradient" onclick="generateDevVars()">
+                <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 7h10M9 4l3 3-3 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Generate .dev.vars content
+              </button>
+            </div>
+            <div id="devvars-output" style="display:none; margin-top:12px">
+              <div class="cmd-block" style="flex-direction:column; align-items:flex-start; gap:4px">
+                <pre id="devvars-text" style="font-family:'Courier New',monospace; font-size:12px; color:#a3e635; white-space:pre-wrap; word-break:break-all; width:100%"></pre>
+                <button class="copy-btn" style="align-self:flex-end" onclick="copyDevVars()">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Copy all
+                </button>
+              </div>
+              <div class="form-hint" style="margin-top:6px">Save this content to <code>d:\Maildock\Maildock\.dev.vars</code></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">Production Secrets (<code>wrangler secret put</code>)</div>
+              <div class="card-desc">In production, set secrets via the Cloudflare dashboard or these commands. The <code>ENCRYPTION_KEY</code> is auto-generated by the Setup wizard.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="cmd-block">
+              <span class="cmd-text">npx wrangler secret put ENCRYPTION_KEY --config wrangler.jsonc</span>
+              <button class="copy-btn" onclick="copyCmd('npx wrangler secret put ENCRYPTION_KEY --config wrangler.jsonc', this)">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Copy
+              </button>
+            </div>
+            <div class="cmd-block" style="margin-top:8px">
+              <span class="cmd-text">npx wrangler secret put CF_API_TOKEN --config wrangler.jsonc</span>
+              <button class="copy-btn" onclick="copyCmd('npx wrangler secret put CF_API_TOKEN --config wrangler.jsonc', this)">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Copy
+              </button>
+            </div>
+            <div class="info-box">
+              💡 <strong>Setup wizard sets secrets automatically.</strong> When you first open the app, the Setup page asks for your Cloudflare API token and stores it as a Worker secret via the Cloudflare API — no terminal needed.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PERMISSIONS PAGE ═══ -->
+    <div class="page" id="page-permissions">
+      <div class="page-header">
+        <h1>🔐 Cloudflare API Permissions</h1>
+        <p>Required token scopes for all Maildock features. Create an Account API token (not a User token).</p>
+      </div>
+
+      <div class="section">
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">Quick Create Token</div>
+              <div class="card-desc">Open the Cloudflare dashboard with a pre-filled permission template for Maildock.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <a class="btn btn-gradient" href="https://dash.cloudflare.com/?to=/:account/api-tokens" target="_blank" rel="noopener">
+              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 2H2v10h10V7M9 2h3v3M12 2L7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Open Cloudflare Token Creator
+            </a>
+            <div class="info-box">Select <strong>Create Custom Token</strong>, name it <strong>Maildock</strong>, then add the permissions listed below.</div>
+          </div>
+        </div>
+
+        <div class="section-title">Required Permissions</div>
+        <div class="checklist">
+          <div class="check-item">
+            <div class="check-icon required"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div>
+              <div class="check-label">Zone → Zone → Read</div>
+              <div class="check-why">List your domains so Maildock can find the right Cloudflare zone</div>
+            </div>
+            <span class="check-badge badge-required">Required</span>
+          </div>
+          <div class="check-item">
+            <div class="check-icon required"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div>
+              <div class="check-label">Zone → DNS → Edit</div>
+              <div class="check-why">Create MX, SPF, DKIM, and DMARC records for your email domain</div>
+            </div>
+            <span class="check-badge badge-required">Required</span>
+          </div>
+          <div class="check-item">
+            <div class="check-icon required"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div>
+              <div class="check-label">Zone → Zone Settings → Edit</div>
+              <div class="check-why">Enable Cloudflare Email Routing on your zone</div>
+            </div>
+            <span class="check-badge badge-required">Required</span>
+          </div>
+          <div class="check-item">
+            <div class="check-icon required"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div>
+              <div class="check-label">Zone → Email Routing Rules → Edit</div>
+              <div class="check-why">Route incoming mail to the Maildock Worker</div>
+            </div>
+            <span class="check-badge badge-required">Required</span>
+          </div>
+          <div class="check-item">
+            <div class="check-icon required"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div>
+              <div class="check-label">Account → Workers Scripts → Edit</div>
+              <div class="check-why">Find this Worker and its D1 database binding</div>
+            </div>
+            <span class="check-badge badge-required">Required</span>
+          </div>
+
+          <div style="margin: 10px 0 6px; font-size:12px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.5px">Optional — unlock extra features</div>
+
+          <div class="check-item">
+            <div class="check-icon optional"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5h6M5 2v6" stroke-linecap="round"/></svg></div>
+            <div>
+              <div class="check-label">Zone → Workers Routes → Edit</div>
+              <div class="check-why">Serve the app on a custom domain like <code>mail.yourdomain.com</code></div>
+            </div>
+            <span class="check-badge badge-optional">Optional</span>
+          </div>
+          <div class="check-item">
+            <div class="check-icon optional"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5h6M5 2v6" stroke-linecap="round"/></svg></div>
+            <div>
+              <div class="check-label">Zone → Analytics → Read</div>
+              <div class="check-why">Show Email Routing delivery logs in the admin panel</div>
+            </div>
+            <span class="check-badge badge-optional">Optional</span>
+          </div>
+          <div class="check-item">
+            <div class="check-icon optional"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5h6M5 2v6" stroke-linecap="round"/></svg></div>
+            <div>
+              <div class="check-label">Account → Email Routing Addresses → Edit</div>
+              <div class="check-why">Verify forwarding addresses for email routing</div>
+            </div>
+            <span class="check-badge badge-optional">Optional</span>
+          </div>
+          <div class="check-item">
+            <div class="check-icon optional"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5h6M5 2v6" stroke-linecap="round"/></svg></div>
+            <div>
+              <div class="check-label">Account → Email Sending → Edit</div>
+              <div class="check-why">Send outbound email through Cloudflare Email Workers</div>
+            </div>
+            <span class="check-badge badge-optional">Optional</span>
+          </div>
+          <div class="check-item">
+            <div class="check-icon optional"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5h6M5 2v6" stroke-linecap="round"/></svg></div>
+            <div>
+              <div class="check-label">Account → Account Analytics → Read</div>
+              <div class="check-why">Show Cloudflare free-tier usage on the admin dashboard</div>
+            </div>
+            <span class="check-badge badge-optional">Optional</span>
+          </div>
+          <div class="check-item">
+            <div class="check-icon optional"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5h6M5 2v6" stroke-linecap="round"/></svg></div>
+            <div>
+              <div class="check-label">Account → Account Settings → Read</div>
+              <div class="check-why">Show your Cloudflare account name in the UI (recommended)</div>
+            </div>
+            <span class="check-badge badge-optional">Optional</span>
+          </div>
+          <div class="check-item">
+            <div class="check-icon optional"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5h6M5 2v6" stroke-linecap="round"/></svg></div>
+            <div>
+              <div class="check-label">Account → Workers R2 Storage → Edit</div>
+              <div class="check-why">Create the R2 bucket for email attachments (optional feature, requires paid plan)</div>
+            </div>
+            <span class="check-badge badge-optional">Optional</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Token Scope Summary</div>
+        <div class="card"><div class="card-body">
+          <div class="cmd-block">
+            <span class="cmd-text">Zone:Zone:Read | Zone:DNS:Edit | Zone:Zone Settings:Edit | Zone:Email Routing Rules:Edit | Account:Workers Scripts:Edit</span>
+            <button class="copy-btn" onclick="copyCmd('Zone:Zone:Read | Zone:DNS:Edit | Zone:Zone Settings:Edit | Zone:Email Routing Rules:Edit | Account:Workers Scripts:Edit', this)">
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Copy
+            </button>
+          </div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- ═══ BUILD PAGE ═══ -->
+    <div class="page" id="page-build">
+      <div class="page-header">
+        <h1>🛠️ Build & Dev Server</h1>
+        <p>Build the project locally or start the development server.</p>
+      </div>
+
+      <div class="section">
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">Build (Production)</div>
+              <div class="card-desc">Compiles TypeScript, bundles React, and produces Worker output in <code>dist/</code>.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="cmd-block">
+              <span class="cmd-text">cd d:\Maildock\Maildock &amp;&amp; npm run build</span>
+              <button class="copy-btn" onclick="copyCmd('cd d:\\Maildock\\Maildock && npm run build', this)">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">Type Check</div>
+              <div class="card-desc">Validates all TypeScript types across Worker, Web, and Node scripts. No compilation output.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="cmd-block">
+              <span class="cmd-text">cd d:\Maildock\Maildock &amp;&amp; npm run typecheck</span>
+              <button class="copy-btn" onclick="copyCmd('cd d:\\Maildock\\Maildock && npm run typecheck', this)">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">Dev Server (with mock APIs)</div>
+              <div class="card-desc">Starts Vite dev server + mock Cloudflare/Resend/Brevo APIs. Requires <code>.dev.vars</code> file.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="warn-box">Start the mock server in a separate terminal first, then start the dev server in another.</div>
+            <div style="margin-top:12px; font-size:12px; color:var(--muted); font-weight:600; margin-bottom:6px">Terminal 1 — Mock API Server</div>
+            <div class="cmd-block">
+              <span class="cmd-text">cd d:\Maildock\Maildock &amp;&amp; npm run dev:mock</span>
+              <button class="copy-btn" onclick="copyCmd('cd d:\\Maildock\\Maildock && npm run dev:mock', this)">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Copy
+              </button>
+            </div>
+            <div style="margin-top:10px; font-size:12px; color:var(--muted); font-weight:600; margin-bottom:6px">Terminal 2 — Vite Dev Server</div>
+            <div class="cmd-block">
+              <span class="cmd-text">cd d:\Maildock\Maildock &amp;&amp; npm run dev</span>
+              <button class="copy-btn" onclick="copyCmd('cd d:\\Maildock\\Maildock && npm run dev', this)">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Copy
+              </button>
+            </div>
+            <div class="info-box" style="margin-top:10px">App will be available at <strong>http://localhost:5173</strong></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">Install Dependencies</div>
+              <div class="card-desc">Install or update all project dependencies (Node.js / npm).</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="cmd-block">
+              <span class="cmd-text">cd d:\Maildock\Maildock &amp;&amp; npm install</span>
+              <button class="copy-btn" onclick="copyCmd('cd d:\\Maildock\\Maildock && npm install', this)">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ DATABASE PAGE ═══ -->
+    <div class="page" id="page-database">
+      <div class="page-header">
+        <h1>🗄️ Database Migrations</h1>
+        <p>Cloudflare D1 (SQLite). The Worker auto-runs migrations on startup — manual runs are for local dev or troubleshooting.</p>
+      </div>
+
+      <div class="section">
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">Apply Migrations — Local (dev)</div>
+              <div class="card-desc">Applies all pending SQL migrations to your local D1 dev database.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="cmd-block">
+              <span class="cmd-text">cd d:\Maildock\Maildock &amp;&amp; npm run db:migrate:local</span>
+              <button class="copy-btn" onclick="copyCmd('cd d:\\Maildock\\Maildock && npm run db:migrate:local', this)">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Copy
+              </button>
+            </div>
+            <div class="collapsible">
+              <button class="collapsible-trigger" onclick="toggleCollapsible(this)">
+                <svg viewBox="0 0 12 12" fill="currentColor"><path d="M4.5 3L7.5 6L4.5 9" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                What does this do?
+              </button>
+              <div class="collapsible-body">
+                Runs <code>wrangler d1 migrations apply DB --local</code>. Applies all <code>*.sql</code> files in <code>src/worker/db/migrations/</code> to the local Wrangler D1 SQLite database (stored in <code>.wrangler/state/</code>). Safe to run multiple times — already-applied migrations are skipped.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">Apply Migrations — Remote (production)</div>
+              <div class="card-desc">Applies migrations to your live Cloudflare D1 database. Only needed if the Worker auto-migration fails.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="warn-box">⚠️ This runs against your production database. Make sure you have a backup or know what the migration does.</div>
+            <div class="cmd-block" style="margin-top:10px">
+              <span class="cmd-text">cd d:\Maildock\Maildock &amp;&amp; npm run db:migrate:remote</span>
+              <button class="copy-btn" onclick="copyCmd('cd d:\\Maildock\\Maildock && npm run db:migrate:remote', this)">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">List Applied Migrations</div>
+              <div class="card-desc">Check which migrations have been applied to the local or remote D1 database.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:600">Local</div>
+            <div class="cmd-block">
+              <span class="cmd-text">npx wrangler d1 migrations list DB --local --config wrangler.jsonc</span>
+              <button class="copy-btn" onclick="copyCmd('npx wrangler d1 migrations list DB --local --config wrangler.jsonc', this)">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Copy
+              </button>
+            </div>
+            <div style="font-size:12px; color:var(--muted); margin:10px 0 6px; font-weight:600">Remote</div>
+            <div class="cmd-block">
+              <span class="cmd-text">npx wrangler d1 migrations list DB --remote --config wrangler.jsonc</span>
+              <button class="copy-btn" onclick="copyCmd('npx wrangler d1 migrations list DB --remote --config wrangler.jsonc', this)">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><path d="M1 8V1h7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Migration Files</div>
+        <div class="card"><div class="card-body">
+          <div style="font-size:12px; color:var(--muted); line-height:1.8; font-family:'Courier New',monospace">
+            src/worker/db/migrations/<br/>
+            ├── 0001_init.sql<br/>
+            ├── 0002_...sql<br/>
+            ├── ... (through 0010)<br/>
+            └── 0011_subdomains.sql&nbsp;&nbsp;<span style="color:var(--success); font-family:sans-serif; font-size:11px">← subdomain provisioning</span>
+          </div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- ═══ LINKS PAGE ═══ -->
+    <div class="page" id="page-links">
+      <div class="page-header">
+        <h1>🔗 Links & Resources</h1>
+        <p>Cloudflare dashboards, documentation, and useful references.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Cloudflare Dashboards</div>
+        <div class="link-list">
+          <div class="link-row">
+            <svg viewBox="0 0 15 15" fill="currentColor"><path d="M7.5 1a6.5 6.5 0 100 13A6.5 6.5 0 007.5 1zm0 1a5.5 5.5 0 110 11 5.5 5.5 0 010-11z" opacity=".4"/><path d="M7.5 3.5A4 4 0 017.5 11.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            <a href="https://dash.cloudflare.com" target="_blank" rel="noopener">Cloudflare Dashboard</a>
+            <span>Main account overview</span>
+          </div>
+          <div class="link-row">
+            <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7.5 2L13 5.5V10L7.5 13.5L2 10V5.5L7.5 2Z"/></svg>
+            <a href="https://dash.cloudflare.com/?to=/:account/workers" target="_blank" rel="noopener">Workers & Pages</a>
+            <span>Manage your Worker</span>
+          </div>
+          <div class="link-row">
+            <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="7.5" cy="4.5" rx="4" ry="2"/><path d="M3.5 4.5v3c0 1.1 1.79 2 4 2s4-.9 4-2V4.5"/><path d="M3.5 7.5v3c0 1.1 1.79 2 4 2s4-.9 4-2V7.5"/></svg>
+            <a href="https://dash.cloudflare.com/?to=/:account/workers/d1" target="_blank" rel="noopener">D1 Databases</a>
+            <span>Browse your maildock D1 database</span>
+          </div>
+          <div class="link-row">
+            <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 10L7.5 5L13 10"/><path d="M4 12h7M7.5 5V1"/></svg>
+            <a href="https://dash.cloudflare.com/?to=/:account/api-tokens" target="_blank" rel="noopener">API Tokens</a>
+            <span>Create / manage tokens</span>
+          </div>
+          <div class="link-row">
+            <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="11" height="11" rx="2"/><path d="M2 6h11M6 6v7"/></svg>
+            <a href="https://dash.cloudflare.com/?to=/:account/workers/r2" target="_blank" rel="noopener">R2 Storage</a>
+            <span>Attachment storage (optional)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Cloudflare Documentation</div>
+        <div class="link-list">
+          <div class="link-row">
+            <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h9l1 1v10l-1 1H3l-1-1V3l1-1z"/><path d="M5 6h5M5 9h5M5 12h3"/></svg>
+            <a href="https://developers.cloudflare.com/workers/" target="_blank" rel="noopener">Workers Documentation</a>
+          </div>
+          <div class="link-row">
+            <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h9l1 1v10l-1 1H3l-1-1V3l1-1z"/><path d="M5 6h5M5 9h5M5 12h3"/></svg>
+            <a href="https://developers.cloudflare.com/d1/" target="_blank" rel="noopener">D1 Database Documentation</a>
+          </div>
+          <div class="link-row">
+            <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h9l1 1v10l-1 1H3l-1-1V3l1-1z"/><path d="M5 6h5M5 9h5M5 12h3"/></svg>
+            <a href="https://developers.cloudflare.com/email-routing/" target="_blank" rel="noopener">Email Routing Documentation</a>
+          </div>
+          <div class="link-row">
+            <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h9l1 1v10l-1 1H3l-1-1V3l1-1z"/><path d="M5 6h5M5 9h5M5 12h3"/></svg>
+            <a href="https://developers.cloudflare.com/api/" target="_blank" rel="noopener">Cloudflare REST API Reference</a>
+          </div>
+          <div class="link-row">
+            <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h9l1 1v10l-1 1H3l-1-1V3l1-1z"/><path d="M5 6h5M5 9h5M5 12h3"/></svg>
+            <a href="https://developers.cloudflare.com/r2/" target="_blank" rel="noopener">R2 Storage Documentation</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Email Providers</div>
+        <div class="link-list">
+          <div class="link-row">
+            <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h11M2 8h6M2 12h4"/></svg>
+            <a href="https://resend.com/docs" target="_blank" rel="noopener">Resend Documentation</a>
+            <span>Outbound · 3,000/month free</span>
+          </div>
+          <div class="link-row">
+            <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h11M2 8h6M2 12h4"/></svg>
+            <a href="https://www.brevo.com/en/email-api/" target="_blank" rel="noopener">Brevo API Documentation</a>
+            <span>Outbound · 300/day free</span>
+          </div>
+          <div class="link-row">
+            <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h11M2 8h6M2 12h4"/></svg>
+            <a href="https://dev.mailjet.com/email/guides/" target="_blank" rel="noopener">Mailjet API Documentation</a>
+            <span>Outbound · 6,000/month free</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast">
+  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 7l3.5 3.5L12 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  Copied to clipboard
+</div>
+
+<script>
+// ── Navigation ──
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ── Copy to clipboard ──
+function copyCmd(text, btn) {
+  navigator.clipboard.writeText(text).then(() => showToast()).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta); showToast();
+  });
+}
+
+function showToast() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── Collapsible ──
+function toggleCollapsible(btn) {
+  btn.classList.toggle('open');
+  btn.nextElementSibling.classList.toggle('open');
+}
+
+// ── Generate .dev.vars ──
+function generateDevVars() {
+  const enc = document.getElementById('cfg-enc').value.trim();
+  const token = document.getElementById('cfg-token').value.trim();
+  const worker = document.getElementById('cfg-worker').value.trim() || 'maildock';
+  const cfBase = document.getElementById('cfg-cf-base').value.trim();
+
+  let content = `ENCRYPTION_KEY=${enc || 'REPLACE_WITH_32_CHAR_RANDOM_HEX'}\n`;
+  content += `CF_API_TOKEN=${token || 'REPLACE_WITH_CLOUDFLARE_API_TOKEN'}\n`;
+  if (cfBase) content += `CF_API_BASE=${cfBase}\n`;
+  content += `RESEND_API_BASE=http://127.0.0.1:8790/resend\n`;
+  content += `BREVO_API_BASE=http://127.0.0.1:8790/brevo\n`;
+  content += `MAILJET_API_BASE=http://127.0.0.1:8790/mailjet\n`;
+  content += `WORKER_NAME=${worker}\n`;
+
+  document.getElementById('devvars-text').textContent = content;
+  document.getElementById('devvars-output').style.display = 'block';
+}
+
+function copyDevVars() {
+  const text = document.getElementById('devvars-text').textContent;
+  copyCmd(text, null);
+}
+</script>
+</body>
+</html>
+
